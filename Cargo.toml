@@ -1,0 +1,68 @@
+﻿[package]
+name = "island-voice"
+version = "1.1.2"
+edition = "2024"
+authors = ["IslandVoice Contributors"]
+description = "IslandVoice - 閻忎絻鈻堟搴㈢壐鐠囶參鐓?AI 閸斺晜澧?WinIsland 閹绘帊娆㈤敍鍦杄epSeek + 閸忓秷鍨傜粋鑽ゅ殠閸炪倝鍟嬬拠宥忕礆"
+repository = "https://github.com/island-voice/IslandVoice"
+license = "GPL-3.0-only"
+readme = "README.md"
+
+[package.metadata.winisland]
+id = "island-voice"
+name = "IslandVoice"
+
+[lib]
+name = "island_voice"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+winisland-plugin-api = "0.11"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+cpal = "0.15"
+crossbeam-channel = "0.5"
+reqwest = { version = "0.12", default-features = false, features = ["blocking", "json", "multipart", "rustls-tls", "socks"] }
+windows-sys = { version = "0.59", features = [
+    "Win32_Foundation",
+    "Win32_Graphics_Gdi",
+    "Win32_Media_Multimedia",
+    "Win32_System_LibraryLoader",
+    "Win32_System_Diagnostics_Debug",
+    "Win32_System_SystemServices",
+    "Win32_UI_Input_KeyboardAndMouse",
+    "Win32_UI_HiDpi",
+    "Win32_UI_WindowsAndMessaging",
+] }
+
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.58", features = ["Win32_Media_Speech", "Win32_System_Com"] }
+rodio = { version = "0.20", default-features = false, features = ["mp3"] }
+
+[dev-dependencies]
+hound = "3"
+libloading = "0.9"
+winisland-plugin-api = { version = "0.11", features = ["packager"] }
+
+[[example]]
+name = "pack"
+path = "package.rs"
+
+[[example]]
+name = "vosk-check"
+path = "examples/vosk_check.rs"
+
+[[example]]
+name = "host-smoke"
+path = "examples/host_smoke.rs"
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+strip = true
+
+
+
+
+

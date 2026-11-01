@@ -1,0 +1,8 @@
+target/
+Cargo.lock.bak
+*.zip
+*.dll
+*.pdb
+*.wav
+.winisland-research/
+.tmp/
