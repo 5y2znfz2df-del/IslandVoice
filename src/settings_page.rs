@@ -310,6 +310,14 @@ fn build_items(
             },
             truncate_bytes(&config.stt_model, 100)
         )),
+        label(&format!(
+            "本地操作：{}",
+            if config.enable_computer_actions {
+                "已开启（整理桌面、查天气等）"
+            } else {
+                "已关闭"
+            }
+        )),
     ];
     match mode {
         PageMode::Full => {

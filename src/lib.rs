@@ -6,6 +6,7 @@
 mod audio;
 mod config;
 mod config_window;
+mod computer;
 mod deepseek;
 mod host;
 mod island;

@@ -136,6 +136,7 @@ struct WindowState {
     wake: HWND,
     api_key: HWND,
     model: HWND,
+    base_url: HWND,
     proxy: HWND,
     stt_mode: HWND,
     stt_base: HWND,
@@ -147,6 +148,7 @@ struct WindowState {
     auto_start: HWND,
     show_reply: HWND,
     speak_reply: HWND,
+    enable_actions: HWND,
     initial_focus: Option<String>,
 }
 
@@ -490,7 +492,7 @@ fn create_controls(
         hwnd,
         instance,
         font,
-        "模型名称",
+        "模型名称（如 deepseek-chat / gpt-3.5-turbo）",
         margin,
         y + scaled(5.0, scale),
         label_width,
@@ -498,7 +500,30 @@ fn create_controls(
         false,
     );
     y += row;
-    let proxy = add_edit(
+    let _base_url = add_edit(
+        hwnd,
+        instance,
+        font,
+        field_x,
+        y,
+        field_width,
+        row,
+        &config.deepseek_base_url,
+        false,
+    );
+    add_label(
+        hwnd,
+        instance,
+        font,
+        "大模型地址（OpenAI 兼容）",
+        margin,
+        y + scaled(5.0, scale),
+        label_width,
+        row,
+        false,
+    );
+    y += row;
+    let _proxy = add_edit(
         hwnd,
         instance,
         font,
@@ -521,6 +546,19 @@ fn create_controls(
         false,
     );
     y += row + scaled(6.0, scale);
+
+    add_label(
+        hwnd,
+        instance,
+        font,
+        "电脑操作（实验性）",
+        margin,
+        y,
+        scaled(620.0, scale),
+        scaled(22.0, scale),
+        true,
+    );
+    y += scaled(26.0, scale);
 
     add_label(
         hwnd,
@@ -696,6 +734,41 @@ fn create_controls(
     );
     y += row + scaled(6.0, scale);
 
+    let _base_url = add_edit(
+        hwnd,
+        instance,
+        font,
+        field_x,
+        y,
+        field_width,
+        row,
+        &config.deepseek_base_url,
+        false,
+    );
+    add_label(
+        hwnd,
+        instance,
+        font,
+        "大模型地址（OpenAI 兼容）",
+        margin,
+        y + scaled(5.0, scale),
+        label_width,
+        row,
+        false,
+    );
+    y += row;
+    let enable_actions = add_checkbox(
+        hwnd,
+        instance,
+        font,
+        "允许 AI 执行本地电脑操作（整理桌面、查天气等）",
+        margin,
+        y,
+        scaled(620.0, scale),
+        config.enable_computer_actions,
+    );
+    y += scaled(32.0, scale);
+
     add_label(
         hwnd,
         instance,
@@ -800,7 +873,8 @@ fn create_controls(
         wake,
         api_key,
         model,
-        proxy,
+        base_url: _base_url,
+        proxy: _proxy,
         stt_mode,
         stt_base,
         stt_key,
@@ -811,6 +885,7 @@ fn create_controls(
         auto_start,
         show_reply,
         speak_reply,
+        enable_actions,
         initial_focus,
     }
 }
@@ -1056,6 +1131,7 @@ fn read_config(state: &WindowState) -> Result<Config, String> {
     config.wake_word = get_text(state.wake);
     config.api_key = get_text(state.api_key);
     config.model = get_text(state.model);
+    config.deepseek_base_url = get_text(state.base_url);
     config.http_proxy = get_text(state.proxy);
     config.stt_base_url = get_text(state.stt_base);
     config.stt_api_key = get_text(state.stt_key);
@@ -1066,6 +1142,7 @@ fn read_config(state: &WindowState) -> Result<Config, String> {
     config.auto_start = checked(state.auto_start);
     config.show_reply = checked(state.show_reply);
     config.speak_reply = checked(state.speak_reply);
+    config.enable_computer_actions = checked(state.enable_actions);
     config.stt_mode = match unsafe { SendMessageW(state.stt_mode, CB_GETCURSEL, 0, 0) } {
         1 => SttMode::Online,
         2 => SttMode::Offline,

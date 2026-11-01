@@ -36,12 +36,12 @@ pub struct Config {
     pub wake_word: String,
     pub api_key: String,
     pub model: String,
+    pub deepseek_base_url: String,
     pub http_proxy: String,
     pub auto_start: bool,
     pub show_reply: bool,
     pub speak_reply: bool,
     pub tts_voice: String,
-    pub deepseek_base_url: String,
     pub stt_mode: SttMode,
     pub stt_base_url: String,
     pub stt_api_key: String,
@@ -50,6 +50,10 @@ pub struct Config {
     pub vosk_lib_path: String,
     pub vosk_model_path: String,
     pub stt_vosk_model_path: String,
+    /// 允许 AI 执行本地电脑操作（整理桌面、查天气等）。
+    pub enable_computer_actions: bool,
+    /// 发送给大模型的系统提示词，可自定义助手行为。
+    pub system_prompt: String,
 }
 
 impl Default for Config {
@@ -59,12 +63,12 @@ impl Default for Config {
             wake_word: "hey siri".to_owned(),
             api_key: String::new(),
             model: "deepseek-chat".to_owned(),
+            deepseek_base_url: "https://api.deepseek.com".to_owned(),
             http_proxy: String::new(),
             auto_start: true,
             show_reply: true,
             speak_reply: true,
             tts_voice: "zh-CN-XiaoxiaoNeural".to_owned(),
-            deepseek_base_url: "https://api.deepseek.com".to_owned(),
             stt_mode: SttMode::Auto,
             stt_base_url: "https://api.siliconflow.cn/v1".to_owned(),
             stt_api_key: String::new(),
@@ -73,9 +77,17 @@ impl Default for Config {
             vosk_lib_path: String::new(),
             vosk_model_path: String::new(),
             stt_vosk_model_path: String::new(),
+            enable_computer_actions: false,
+            system_prompt: DEFAULT_SYSTEM_PROMPT.to_owned(),
         }
     }
 }
+
+const DEFAULT_SYSTEM_PROMPT: &str = "你是运行在 WinIsland 灵动岛上的语音助手 IslandVoice。\
+用户通过语音与你交流，你的回答会被朗读或显示在很小的胶囊里。\
+请用简洁、自然、口语化的中文回答，默认控制在 100 字以内；\
+只有在用户明确要求详细展开时才给出更长的解释。\
+不要使用 Markdown 表格、代码块或复杂排版。";
 
 impl Config {
     pub fn sanitized(mut self) -> Self {
@@ -134,6 +146,8 @@ impl Config {
             || self.vosk_model_path != other.vosk_model_path
             || self.stt_vosk_model_path != other.stt_vosk_model_path
             || self.tts_voice != other.tts_voice
+            || self.enable_computer_actions != other.enable_computer_actions
+            || self.system_prompt != other.system_prompt
     }
 
     pub fn load(host: &Host) -> Self {

@@ -10,7 +10,7 @@ use crossbeam_channel::{Receiver, RecvTimeoutError};
 
 use crate::Shared;
 use crate::config::Config;
-use crate::deepseek::DeepSeekClient;
+use crate::deepseek::ChatClient;
 use crate::logging;
 
 pub enum ConfigCommand {
@@ -162,23 +162,23 @@ fn test_deepseek(shared: &Shared, config: &Config) {
     }
     shared.set_status("正在测试 DeepSeek 连接…");
     shared.refresh_settings();
-    match DeepSeekClient::new(config).and_then(|client| client.test()) {
+    match ChatClient::new(config).and_then(|client| client.test()) {
         Ok(reply) => {
             shared.notifier.show_info(
-                "DeepSeek 连接成功",
+                "大模型连接成功",
                 &format!(
                     "模型 {} 正常响应：{}",
                     config.model,
                     reply.chars().take(40).collect::<String>()
                 ),
             );
-            shared.set_status("DeepSeek 连接正常");
+            shared.set_status("大模型连接正常");
         }
         Err(error) => {
             shared
                 .notifier
-                .show_error(&format!("DeepSeek 连接失败：{error}"));
-            shared.set_status("DeepSeek 连接失败");
+                .show_error(&format!("大模型连接失败：{error}"));
+            shared.set_status("大模型连接失败");
         }
     }
     shared.refresh_settings();
