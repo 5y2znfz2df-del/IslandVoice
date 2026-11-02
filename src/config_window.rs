@@ -1149,10 +1149,10 @@ fn read_config(state: &WindowState) -> Result<Config, String> {
         _ => SttMode::Auto,
     };
     if config.assistant_name.is_empty() {
-        return Err("助手名称不能为空".to_owned());
+        config.assistant_name = "IslandVoice".to_owned();
     }
     if config.model.is_empty() {
-        return Err("模型名称不能为空（默认 deepseek-chat）".to_owned());
+        config.model = "deepseek-chat".to_owned();
     }
     let online_required = config.stt_mode == SttMode::Online
         || (config.stt_mode == SttMode::Auto && !config.stt_api_key.is_empty());
