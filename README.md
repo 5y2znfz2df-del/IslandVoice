@@ -1,4 +1,4 @@
-# IslandVoice 1.1.2
+# IslandVoice 1.1.3
 
 WinIsland 的语音 AI 助手插件：唤醒后说中文，DeepSeek 回答，灵动岛显示，并用 Edge 晓晓朗读。
 
@@ -6,7 +6,7 @@ WinIsland 的语音 AI 助手插件：唤醒后说中文，DeepSeek 回答，灵
 
 - 唤醒词 `hey siri`（英文）
 - 唤醒后直接说中文，Windows 自带 zh-CN 离线听写
-- 圆形 Siri 光球从灵动岛弹出，录音期间一直停留
+- 黑色渐变液态玻璃光球从灵动岛弹出，录音期间一直停留（边缘彩虹色散、无中间光条）
 - **说话后停顿约 5 秒**自动结束；唤醒后不说话等 15 秒；最长 60 秒
 - DeepSeek 中文回答 + Edge 神经语音朗读（失败自动退回 SAPI）
 - 快捷键：`Ctrl+Alt+V` 直接说话，`Ctrl+Alt+J` 开关监听
@@ -14,7 +14,7 @@ WinIsland 的语音 AI 助手插件：唤醒后说中文，DeepSeek 回答，灵
 ## 安装
 
 1. 完全退出 WinIsland
-2. 解压 `island-voice-1.1.2.zip` 到：
+2. 解压 `island-voice-1.1.3.zip` 到：
 
 ```text
 %APPDATA%\WinIsland\plugins\island-voice\

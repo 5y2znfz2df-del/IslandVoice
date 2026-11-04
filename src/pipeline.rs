@@ -117,6 +117,8 @@ pub fn run(
         match client.chat(&history) {
             Ok(reply) => {
                 logging::info(&shared.host, &format!("AI 回复：{reply}"));
+                // 纯净文本：去掉 ACTION 标记，只用于 TTS 朗读。
+                let speak_text = ComputerAction::strip_action_tags(&reply);
                 let mut display_reply = reply.clone();
                 if current.enable_computer_actions {
                     if let Some(action) = ComputerAction::parse(&reply) {
@@ -147,10 +149,10 @@ pub fn run(
                     }
                 }
                 if current.speak_reply {
-                    let speak_ms = 1_500 + display_reply.chars().count() as u64 * 180;
+                    let speak_ms = 1_500 + speak_text.chars().count() as u64 * 180;
                     shared.siri.show_for(speak_ms);
                     shared.mute_listening(std::time::Duration::from_millis(speak_ms));
-                    let _ = tts_tx.try_send(Some(display_reply.clone()));
+                    let _ = tts_tx.try_send(Some(speak_text));
                 }
                 shared.notifier.show_reply(&current, &display_reply);
                 shared.set_status("待命");

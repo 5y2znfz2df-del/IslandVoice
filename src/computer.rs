@@ -75,6 +75,29 @@ impl ComputerAction {
             ComputerAction::Unknown(_) => "未知动作",
         }
     }
+
+    /// 从文本中移除 ACTION 标记，返回纯净文本，供 TTS 朗读使用。
+    pub fn strip_action_tags(text: &str) -> String {
+        let mut result = String::new();
+        let mut pos = 0;
+        let bytes = text.as_bytes();
+        while pos < bytes.len() {
+            if bytes[pos] == b'[' {
+                let mut end = pos + 1;
+                while end < bytes.len() && bytes[end] != b']' {
+                    end += 1;
+                }
+                if end < bytes.len() {
+                    end += 1; // 跳过 ]
+                    pos = end;
+                    continue;
+                }
+            }
+            result.push(bytes[pos] as char);
+            pos += 1;
+        }
+        result.trim().to_owned()
+    }
 }
 
 /// 执行一个本地动作，返回人类可读的结果描述。

@@ -37,7 +37,6 @@ use crate::util::wide;
 
 const ID_SAVE: usize = 1001;
 const ID_CANCEL: usize = 1002;
-const ID_STT_MODE: usize = 1100;
 const WM_APP_OPEN: u32 = 0x8000 + 1;
 
 const CLASS_NAME: &str = "IslandVoiceConfigWindow";
@@ -66,10 +65,7 @@ impl ConfigUi {
         let existing = self.hwnd.load(Ordering::SeqCst);
         if existing != 0 {
             let hwnd = existing as HWND;
-            // SAFETY: HWND values are only written by the UI thread after a
-            // successful CreateWindowExW, and are cleared on WM_DESTROY.
             if unsafe { windows_sys::Win32::UI::WindowsAndMessaging::IsWindow(hwnd) } != 0 {
-                // SAFETY: valid window handle; a best-effort foreground request.
                 unsafe {
                     SetForegroundWindow(hwnd);
                     PostMessageW(hwnd, WM_APP_OPEN, 0, 0);
@@ -105,15 +101,11 @@ impl ConfigUi {
         self.closing.store(true, Ordering::SeqCst);
         let hwnd = self.hwnd.swap(0, Ordering::SeqCst);
         if hwnd != 0 {
-            // SAFETY: valid HWND; WM_CLOSE makes the UI thread exit its loop.
             unsafe {
                 PostMessageW(hwnd as HWND, WM_CLOSE, 0, 0);
             }
         }
         if let Ok(mut slot) = self.handle.lock() {
-            // Re-assert after acquiring the lock: `open` holds this lock while
-            // spawning, so this closes the tiny race where it checked the flag
-            // just before close set it.
             self.closing.store(true, Ordering::SeqCst);
             if let Some(handle) = slot.take() {
                 if handle.thread().id() != thread::current().id() {
@@ -173,7 +165,6 @@ unsafe extern "system" fn wndproc(
                         Err(error) => {
                             let text = wide(&error);
                             let caption = wide("IslandVoice 配置");
-                            // SAFETY: local wide strings are NUL terminated.
                             unsafe {
                                 MessageBoxW(hwnd, text.as_ptr(), caption.as_ptr(), 0x0000_0010);
                             }
@@ -196,14 +187,12 @@ unsafe extern "system" fn wndproc(
                     focus_field(state, &focus);
                 }
             }
-            // SAFETY: best effort foreground activation.
             unsafe {
                 SetForegroundWindow(hwnd);
             }
             0
         }
         WM_CTLCOLORSTATIC => {
-            // SAFETY: the HDC is supplied by the system for this paint message.
             unsafe {
                 SetBkMode(lparam as *mut c_void, 1);
                 GetSysColorBrush(COLOR_WINDOW) as LRESULT
@@ -220,7 +209,6 @@ unsafe extern "system" fn wndproc(
         WM_DESTROY => {
             let pointer = unsafe { GetWindowLongPtrW(hwnd, GWLP_USERDATA) };
             if pointer != 0 {
-                // SAFETY: pointer was created by Box::into_raw in run_window.
                 unsafe {
                     drop(Box::from_raw(pointer as *mut WindowState));
                     SetWindowLongPtrW(hwnd, GWLP_USERDATA, 0);
@@ -242,8 +230,6 @@ fn state(hwnd: HWND) -> Option<&'static mut WindowState> {
     if pointer == 0 {
         None
     } else {
-        // SAFETY: the pointer is installed for this window's lifetime and
-        // cleared in WM_DESTROY before the Box is dropped.
         Some(unsafe { &mut *(pointer as *mut WindowState) })
     }
 }
@@ -268,15 +254,14 @@ fn run_window(
         lpszMenuName: std::ptr::null(),
         lpszClassName: class_name.as_ptr(),
     };
-    // SAFETY: class_name and wndclass are valid for the duration of the call.
     unsafe {
         RegisterClassW(&wndclass);
     }
 
     let config = shared.config();
     let scale = dpi_scale();
-    let width = scaled(680.0, scale);
-    let height = scaled(760.0, scale);
+    let width = scaled(720.0, scale);
+    let height = scaled(820.0, scale);
     let x = (unsafe { windows_sys::Win32::UI::WindowsAndMessaging::GetSystemMetrics(SM_CXSCREEN) }
         - width)
         / 2;
@@ -284,7 +269,6 @@ fn run_window(
         - height)
         / 2;
     let title = wide("IslandVoice 配置");
-    // SAFETY: all pointers are local, NUL terminated or null.
     let hwnd = unsafe {
         CreateWindowExW(
             0,
@@ -331,7 +315,6 @@ fn run_window(
 
     let mut message: MSG = unsafe { std::mem::zeroed() };
     loop {
-        // SAFETY: message is a valid MSG output buffer.
         let result = unsafe { GetMessageW(&mut message, std::ptr::null_mut(), 0, 0) };
         if result <= 0 {
             break;
@@ -352,12 +335,12 @@ fn create_controls(
     initial_focus: Option<String>,
 ) -> WindowState {
     let scale = dpi_scale();
-    let margin = scaled(20.0, scale);
-    let label_width = scaled(168.0, scale);
+    let margin = scaled(16.0, scale);
+    let label_width = scaled(150.0, scale);
     let field_x = margin + label_width;
-    let field_width = scaled(450.0, scale);
-    let row = scaled(30.0, scale);
-    let mut y = scaled(16.0, scale);
+    let field_width = scaled(520.0, scale);
+    let row = scaled(24.0, scale);
+    let mut y = scaled(12.0, scale);
     let instance = unsafe { GetModuleHandleW(std::ptr::null()) };
 
     add_label(
@@ -367,11 +350,11 @@ fn create_controls(
         "IslandVoice 配置",
         margin,
         y,
-        scaled(620.0, scale),
-        scaled(26.0, scale),
+        scaled(520.0, scale),
+        scaled(20.0, scale),
         true,
     );
-    y += scaled(34.0, scale);
+    y += scaled(24.0, scale);
     add_label(
         hwnd,
         instance,
@@ -379,11 +362,11 @@ fn create_controls(
         "语音 AI 助手 · DeepSeek",
         margin,
         y,
-        scaled(620.0, scale),
-        scaled(22.0, scale),
+        scaled(520.0, scale),
+        scaled(20.0, scale),
         false,
     );
-    y += scaled(26.0, scale);
+    y += scaled(18.0, scale);
 
     let assistant = add_edit(
         hwnd,
@@ -402,7 +385,7 @@ fn create_controls(
         font,
         "助手名称",
         margin,
-        y + scaled(5.0, scale),
+        y + scaled(4.0, scale),
         label_width,
         row,
         false,
@@ -425,7 +408,7 @@ fn create_controls(
         font,
         "唤醒词（示例：heySiri）",
         margin,
-        y + scaled(5.0, scale),
+        y + scaled(4.0, scale),
         label_width,
         row,
         false,
@@ -437,7 +420,7 @@ fn create_controls(
         font,
         "大模型服务",
         margin,
-        y + scaled(5.0, scale),
+        y + scaled(4.0, scale),
         label_width,
         row,
         false,
@@ -448,7 +431,7 @@ fn create_controls(
         font,
         "DeepSeek（固定）",
         field_x,
-        y + scaled(5.0, scale),
+        y + scaled(4.0, scale),
         field_width,
         row,
         false,
@@ -471,7 +454,7 @@ fn create_controls(
         font,
         "API 密钥",
         margin,
-        y + scaled(5.0, scale),
+        y + scaled(4.0, scale),
         label_width,
         row,
         false,
@@ -494,13 +477,13 @@ fn create_controls(
         font,
         "模型名称（如 deepseek-chat / gpt-3.5-turbo）",
         margin,
-        y + scaled(5.0, scale),
+        y + scaled(4.0, scale),
         label_width,
         row,
         false,
     );
     y += row;
-    let _base_url = add_edit(
+    let base_url = add_edit(
         hwnd,
         instance,
         font,
@@ -517,13 +500,13 @@ fn create_controls(
         font,
         "大模型地址（OpenAI 兼容）",
         margin,
-        y + scaled(5.0, scale),
+        y + scaled(4.0, scale),
         label_width,
         row,
         false,
     );
     y += row;
-    let _proxy = add_edit(
+    let proxy = add_edit(
         hwnd,
         instance,
         font,
@@ -540,7 +523,7 @@ fn create_controls(
         font,
         "HTTP 代理地址（可选）",
         margin,
-        y + scaled(5.0, scale),
+        y + scaled(4.0, scale),
         label_width,
         row,
         false,
@@ -551,27 +534,14 @@ fn create_controls(
         hwnd,
         instance,
         font,
-        "电脑操作（实验性）",
-        margin,
-        y,
-        scaled(620.0, scale),
-        scaled(22.0, scale),
-        true,
-    );
-    y += scaled(26.0, scale);
-
-    add_label(
-        hwnd,
-        instance,
-        font,
         "语音识别（高级）",
         margin,
         y,
-        scaled(620.0, scale),
-        scaled(22.0, scale),
+        scaled(520.0, scale),
+        scaled(20.0, scale),
         true,
     );
-    y += scaled(26.0, scale);
+    y += scaled(20.0, scale);
 
     let stt_mode = add_combo(
         hwnd,
@@ -589,7 +559,7 @@ fn create_controls(
         font,
         "识别方式",
         margin,
-        y + scaled(5.0, scale),
+        y + scaled(4.0, scale),
         label_width,
         row,
         false,
@@ -612,7 +582,7 @@ fn create_controls(
         font,
         "STT 地址（OpenAI 兼容）",
         margin,
-        y + scaled(5.0, scale),
+        y + scaled(4.0, scale),
         label_width,
         row,
         false,
@@ -635,7 +605,7 @@ fn create_controls(
         font,
         "STT 密钥",
         margin,
-        y + scaled(5.0, scale),
+        y + scaled(4.0, scale),
         label_width,
         row,
         false,
@@ -658,7 +628,7 @@ fn create_controls(
         font,
         "STT 模型",
         margin,
-        y + scaled(5.0, scale),
+        y + scaled(4.0, scale),
         label_width,
         row,
         false,
@@ -681,7 +651,7 @@ fn create_controls(
         font,
         "识别语言（zh / en / auto）",
         margin,
-        y + scaled(5.0, scale),
+        y + scaled(4.0, scale),
         label_width,
         row,
         false,
@@ -704,7 +674,7 @@ fn create_controls(
         font,
         "Vosk 模型目录（留空自动）",
         margin,
-        y + scaled(5.0, scale),
+        y + scaled(4.0, scale),
         label_width,
         row,
         false,
@@ -727,47 +697,12 @@ fn create_controls(
         font,
         "libvosk.dll 路径（留空自动）",
         margin,
-        y + scaled(5.0, scale),
+        y + scaled(4.0, scale),
         label_width,
         row,
         false,
     );
     y += row + scaled(6.0, scale);
-
-    let _base_url = add_edit(
-        hwnd,
-        instance,
-        font,
-        field_x,
-        y,
-        field_width,
-        row,
-        &config.deepseek_base_url,
-        false,
-    );
-    add_label(
-        hwnd,
-        instance,
-        font,
-        "大模型地址（OpenAI 兼容）",
-        margin,
-        y + scaled(5.0, scale),
-        label_width,
-        row,
-        false,
-    );
-    y += row;
-    let enable_actions = add_checkbox(
-        hwnd,
-        instance,
-        font,
-        "允许 AI 执行本地电脑操作（整理桌面、查天气等）",
-        margin,
-        y,
-        scaled(620.0, scale),
-        config.enable_computer_actions,
-    );
-    y += scaled(32.0, scale);
 
     add_label(
         hwnd,
@@ -776,11 +711,11 @@ fn create_controls(
         "行为",
         margin,
         y,
-        scaled(620.0, scale),
-        scaled(22.0, scale),
+        scaled(520.0, scale),
+        scaled(20.0, scale),
         true,
     );
-    y += scaled(26.0, scale);
+    y += scaled(20.0, scale);
     let auto_start = add_checkbox(
         hwnd,
         instance,
@@ -788,10 +723,10 @@ fn create_controls(
         "随 WinIsland 启动自动开启语音监听",
         margin,
         y,
-        scaled(620.0, scale),
+        scaled(520.0, scale),
         config.auto_start,
     );
-    y += scaled(26.0, scale);
+    y += scaled(22.0, scale);
     let show_reply = add_checkbox(
         hwnd,
         instance,
@@ -799,10 +734,10 @@ fn create_controls(
         "灵动岛显示 AI 回复",
         margin,
         y,
-        scaled(620.0, scale),
+        scaled(520.0, scale),
         config.show_reply,
     );
-    y += scaled(26.0, scale);
+    y += scaled(22.0, scale);
     let speak_reply = add_checkbox(
         hwnd,
         instance,
@@ -810,10 +745,21 @@ fn create_controls(
         "朗读 AI 回复（Windows 语音）",
         margin,
         y,
-        scaled(620.0, scale),
+        scaled(520.0, scale),
         config.speak_reply,
     );
-    y += scaled(32.0, scale);
+    y += scaled(22.0, scale);
+    let enable_actions = add_checkbox(
+        hwnd,
+        instance,
+        font,
+        "允许 AI 执行本地电脑操作（整理桌面、查天气等）",
+        margin,
+        y,
+        scaled(520.0, scale),
+        config.enable_computer_actions,
+    );
+    y += scaled(26.0, scale);
 
     let _hint = add_label(
         hwnd,
@@ -822,11 +768,11 @@ fn create_controls(
         "离线唤醒需要 Vosk；在线 STT 填 SiliconFlow / Groq / OpenAI 兼容地址。密钥只保存在 WinIsland 插件存储中。",
         margin,
         y,
-        scaled(620.0, scale),
-        scaled(36.0, scale),
+        scaled(520.0, scale),
+        scaled(30.0, scale),
         false,
     );
-    y += scaled(40.0, scale);
+    y += scaled(34.0, scale);
 
     add_button(
         hwnd,
@@ -853,15 +799,14 @@ fn create_controls(
         false,
     );
 
-    // Resize the window so the controls fit exactly.
-    let desired_height = y + scaled(90.0, scale);
+    let desired_height = y + scaled(50.0, scale);
     unsafe {
         SetWindowPos(
             hwnd,
             std::ptr::null_mut(),
             0,
             0,
-            scaled(680.0, scale),
+            scaled(720.0, scale),
             desired_height,
             0x0002 | 0x0004 | 0x0010,
         );
@@ -873,8 +818,8 @@ fn create_controls(
         wake,
         api_key,
         model,
-        base_url: _base_url,
-        proxy: _proxy,
+        base_url,
+        proxy,
         stt_mode,
         stt_base,
         stt_key,
@@ -903,7 +848,6 @@ fn add_label(
 ) -> HWND {
     let class = wide("STATIC");
     let text = wide(text);
-    // SAFETY: all strings and parent handles are valid.
     let hwnd = unsafe {
         CreateWindowExW(
             0,
@@ -940,7 +884,6 @@ fn add_edit(
     if password {
         style |= ES_PASSWORD as u32;
     }
-    // SAFETY: class name is local and valid for the call.
     let hwnd = unsafe {
         CreateWindowExW(
             0,
@@ -1011,7 +954,6 @@ fn add_combo(
     unsafe {
         SendMessageW(hwnd, CB_SETCURSEL, index, 0);
     }
-    let _ = ID_STT_MODE;
     hwnd
 }
 
@@ -1092,9 +1034,7 @@ fn add_button(
     hwnd
 }
 
-fn set_font(hwnd: HWND, font: HGDIOBJ, bold: bool) {
-    let _ = bold;
-    // SAFETY: stock font handle and child window are valid.
+fn set_font(hwnd: HWND, font: HGDIOBJ, _bold: bool) {
     unsafe {
         SendMessageW(hwnd, WM_SETFONT, font as usize, 1);
     }

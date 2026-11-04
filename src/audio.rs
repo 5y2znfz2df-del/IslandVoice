@@ -587,14 +587,6 @@ impl Recording {
     }
 
     fn push(&mut self, frame: &[f32]) -> RecordingResult {
-        if self.pcm.len() % 32_000 < 320 {
-            crate::util::debug_line(&format!(
-                "recording state: speech={} pcm={} last={}ms",
-                self.speech_started,
-                self.pcm.len(),
-                self.last_voice.elapsed().as_millis()
-            ));
-        }
         self.pcm.extend_from_slice(frame);
         let rms = rms(frame);
         let now = Instant::now();

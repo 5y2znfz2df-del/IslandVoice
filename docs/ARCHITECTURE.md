@@ -12,7 +12,7 @@ pub unsafe extern "C" fn winisland_plugin_entry_v2() -> *const PluginDescriptorV
 - ABI锛歚ABI_VERSION_2`
 - 鑳藉姏锛歚CAP_CONTEXT | CAP_SETTINGS | CAP_STORE | CAP_COMMAND`
 - 鐢熷懡鍛ㄦ湡锛歚create` / `shutdown` / `destroy`
-- 鍏冩暟鎹細`island-voice` / `IslandVoice` / `1.1.2` / `IslandVoice Contributors`
+- 鍏冩暟鎹細`island-voice` / `IslandVoice` / `1.1.3` / `IslandVoice Contributors`
 - 鏃?`on_tick`锛堟墍鏈夊伐浣滃湪绾跨▼涓畬鎴愶紝涓嶄緷璧栨覆鏌?tick锛?
 ## 2. 绾跨▼妯″瀷
 

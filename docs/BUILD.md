@@ -52,7 +52,7 @@ cargo run --example pack
 
 杈撳嚭锛?
 ```text
-target/island-voice-1.1.2.zip
+target/island-voice-1.1.3.zip
 ```
 
 ZIP 鍐呭锛?
@@ -72,7 +72,7 @@ README.md锛堝瓨鍦ㄦ椂锛?```
 - 蹇呴』鎻愪氦/淇濈暀 `Cargo.lock`锛涚己澶辨椂鍏堣繍琛?`cargo generate-lockfile`銆?- `Cargo.toml` 鐨?`[package.metadata.winisland] id/name` 蹇呴』涓?`src/lib.rs` 鐨?`PluginMetadataC::new(...)` 瀹屽叏涓€鑷达細
   - id: `island-voice`
   - name: `IslandVoice`
-  - version: `1.1.2`
+  - version: `1.1.3`
   - author: `IslandVoice Contributors`
 - 鏀规彃浠跺悕/浣滆€?浠撳簱鍦板潃鏃讹紝涓夊涓€璧锋敼锛歚Cargo.toml`銆乣src/lib.rs` 鎻忚堪绗︺€佹墦鍖呭厓鏁版嵁銆?- 瀹樻柟 packager 榛樿杈撳嚭 `target/<name>-<version>.zip`锛沗package.rs` 鏄惧紡鎸囧畾涓?`target/island-voice-<version>.zip`銆?
 ### 鍙€夛細绛惧悕

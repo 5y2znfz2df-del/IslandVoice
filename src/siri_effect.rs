@@ -232,67 +232,99 @@ fn render(pixels: &mut [u32], width: i32, t: f32, closing: Option<f32>) {
     };
     let cy = START_CY + (END_CY - START_CY) * progress;
     let radius = START_R + (END_R - START_R) * progress;
-    let pulse = 1.0 + 0.010 * (t * 2.1).sin();
+    let pulse = 1.0 + 0.008 * (t * 1.9).sin();
     let r = radius * pulse;
+    let inv_r = 1.0 / r.max(1.0);
 
     for y in 0..h {
         for x in 0..w {
             let dx = x as f32 - cx;
             let dy = y as f32 - cy;
-            let n = (dx * dx + dy * dy).sqrt() / r;
+            let n = (dx * dx + dy * dy).sqrt() * inv_r;
             let mut color = [0.0f32; 3];
             let mut alpha = 0.0f32;
 
             if n <= 1.0 {
-                let depth = (1.0 - n).max(0.0);
-                let base = 0.010 + 0.020 * depth;
-                color = [base * 0.9, base, base * 1.3];
-                let sheen = (-(dy + 55.0).powi(2) / 9000.0).exp() * 0.015;
-                color = blend_add(color, [0.25, 0.34, 0.52], sheen);
-                alpha = 0.985;
+                let nx = dx * inv_r;
+                let ny = dy * inv_r;
 
-                let bezel = 1.0 - n;
-                if bezel < 0.075 && dy > -30.0 {
-                    let hue = (t * 55.0 + x as f32 * 0.55 + y as f32 * 0.2) % 360.0;
-                    let (rr, gg, bb) = hue_rgb(hue);
-                    let strength = (1.0 - bezel / 0.075).powi(2) * 0.55;
-                    color = blend_add(color, [rr, gg, bb], strength * 0.40);
-                    alpha = (alpha + strength * 0.22).min(1.0);
-                }
+                // 主体：黑色渐变液态玻璃。
+                // 顶部偏冷灰蓝、底部接近纯黑，形成柔和的竖向渐变。
+                let v = ((ny + 1.0) * 0.5).clamp(0.0, 1.0);
+                let grad = v.powf(0.85);
+                let top = [0.115f32, 0.125, 0.165];
+                let bottom = [0.006f32, 0.007, 0.012];
+                color = [
+                    top[0] + (bottom[0] - top[0]) * grad,
+                    top[1] + (bottom[1] - top[1]) * grad,
+                    top[2] + (bottom[2] - top[2]) * grad,
+                ];
 
-                let band = (-((y as f32 - cy).powi(2)) / 22.0).exp();
-                let span = (dx / (r * 0.88)).abs();
-                if band > 0.015 && span < 1.0 {
-                    let hue = (t * 120.0 + dx * 1.2) % 360.0;
-                    let (rr, gg, bb) = hue_rgb(hue);
-                    let strength = band * (1.0 - span).powf(1.8) * 1.30;
-                    color = blend_add(color, [rr, gg, bb], strength);
-                    alpha = (alpha + strength * 0.95).min(1.0);
-                }
+                // 左上大范围柔光，模拟玻璃表面的漫反射。
+                let lx = nx + 0.62;
+                let ly = ny + 0.62;
+                let sheen = (-(lx * lx + ly * ly) * 1.15).exp() * 0.10;
+                color = blend_add(color, [0.62, 0.72, 0.95], sheen);
 
-                let hx = dx + r * 0.49;
-                let hy = dy + r * 0.52;
-                let highlight = (-(hx * hx) / (r * r * 0.18) - (hy * hy) / (r * r * 0.07)).exp();
+                // 高光点：左上方更集中。
+                let hx = nx + 0.46;
+                let hy = ny + 0.46;
+                let highlight = (-(hx * hx) * 5.2 - (hy * hy) * 8.5).exp();
                 if highlight > 0.01 {
-                    color = blend_add(color, [0.75, 0.86, 1.0], highlight * 0.42);
-                    alpha = (alpha + highlight * 0.35).min(1.0);
-                }
-                let soft = (-(dx * dx + (dy + r * 0.15).powi(2)) / (r * r * 1.7)).exp();
-                if soft > 0.01 {
-                    color = blend_add(color, [0.55, 0.65, 0.85], soft * 0.08);
+                    color = blend_add(color, [0.90, 0.95, 1.0], highlight * 0.62);
                 }
 
-                if n > 0.96 {
-                    alpha *= ((1.0 - n) / 0.04).clamp(0.0, 1.0);
+                // 右侧微弱反光，增加球体体积感。
+                let sx = nx - 0.55;
+                let sy = ny + 0.10;
+                let right = (-(sx * sx) * 7.0 - (sy * sy) * 3.0).exp() * 0.08;
+                color = blend_add(color, [0.55, 0.62, 0.85], right);
+
+                // 越靠近轮廓越暗：玻璃厚度的吸收。
+                let rim_dark = smoothstep(0.70, 1.0, n) * 0.55;
+                color = [
+                    color[0] * (1.0 - rim_dark),
+                    color[1] * (1.0 - rim_dark),
+                    color[2] * (1.0 - rim_dark * 0.85),
+                ];
+
+                // 液态玻璃色散环：轮廓内一圈彩虹折射。
+                let bezel = smoothstep(0.84, 0.995, n);
+                if bezel > 0.001 {
+                    let hue = (t * 38.0 + nx * 75.0 - ny * 55.0).rem_euclid(360.0);
+                    let (hr, hg, hb) = hue_rgb(hue);
+                    let lower = smoothstep(-0.75, 0.35, ny);
+                    let strength = bezel * (0.16 + 0.28 * lower);
+                    color = blend_add(color, [hr, hg, hb], strength);
+                }
+
+                // 极细的轮廓亮边。
+                let edge = smoothstep(0.955, 0.985, n) * (1.0 - smoothstep(0.985, 1.0, n));
+                if edge > 0.001 {
+                    color = blend_add(color, [0.78, 0.86, 1.0], edge * 0.50);
+                }
+
+                // 底部玻璃厚度：一条柔和的亮弧。
+                let caustic_y = ny - 0.62;
+                let caustic = (-(caustic_y * caustic_y) * 18.0).exp()
+                    * (-(nx * nx) * 2.2).exp()
+                    * smoothstep(0.35, 0.75, n)
+                    * 0.10;
+                if caustic > 0.001 {
+                    color = blend_add(color, [0.50, 0.60, 0.90], caustic);
+                }
+
+                alpha = 0.985;
+                if n > 0.965 {
+                    alpha *= ((1.0 - n) / 0.035).clamp(0.0, 1.0);
                 }
             }
 
-            if (1.0..1.18).contains(&n) {
-                let strength = (1.0 - (n - 1.0) / 0.18).max(0.0).powi(3);
-                let hue = (t * 50.0 + x as f32 * 0.5) % 360.0;
-                let (rr, gg, bb) = hue_rgb(hue);
-                color = blend_add(color, [rr * 0.3, gg * 0.3, bb * 0.3], strength * 0.25);
-                alpha = (alpha + strength * 0.08).min(1.0);
+            // 外发光：非常克制的冷色光晕。
+            if (1.0..1.12).contains(&n) {
+                let strength = (1.0 - (n - 1.0) / 0.12).max(0.0).powi(3);
+                color = blend_add(color, [0.35, 0.42, 0.65], strength * 0.10);
+                alpha = (alpha + strength * 0.05).min(1.0);
             }
 
             alpha *= opacity;
@@ -303,6 +335,11 @@ fn render(pixels: &mut [u32], width: i32, t: f32, closing: Option<f32>) {
             pixels[y * w + x] = (a << 24) | (r << 16) | (g << 8) | b;
         }
     }
+}
+
+fn smoothstep(edge0: f32, edge1: f32, x: f32) -> f32 {
+    let t = ((x - edge0) / (edge1 - edge0).max(1e-6)).clamp(0.0, 1.0);
+    t * t * (3.0 - 2.0 * t)
 }
 
 fn ease_out_back(p: f32) -> f32 {

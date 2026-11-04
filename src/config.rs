@@ -87,7 +87,10 @@ const DEFAULT_SYSTEM_PROMPT: &str = "你是运行在 WinIsland 灵动岛上的�
 用户通过语音与你交流，你的回答会被朗读或显示在很小的胶囊里。\
 请用简洁、自然、口语化的中文回答，默认控制在 100 字以内；\
 只有在用户明确要求详细展开时才给出更长的解释。\
-不要使用 Markdown 表格、代码块或复杂排版。";
+不要使用 Markdown 表格、代码块或复杂排版。\
+如果用户询问天气，请在回复中包含 [ACTION: weather:城市名] 标记，\
+例如 [ACTION: weather:北京]，我会自动为你查询实时天气并播报。\
+如果用户要求整理桌面，请包含 [ACTION: organize_desktop] 标记。";
 
 impl Config {
     pub fn sanitized(mut self) -> Self {
