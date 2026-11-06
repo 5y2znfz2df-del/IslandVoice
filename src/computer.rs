@@ -30,11 +30,13 @@ impl ComputerAction {
     pub fn parse(text: &str) -> Option<Self> {
         let text = text.trim();
         for marker in ["[ACTION:", "[action:", "[动作:"] {
-            let start = text.find(marker)?;
-            let after = &text[start + marker.len()..];
-            let end = after.find(']')?;
-            let payload = &after[..end].trim();
-            return Some(Self::parse_payload(payload));
+            if let Some(start) = text.find(marker) {
+                let after = &text[start + marker.len()..];
+                if let Some(end) = after.find(']') {
+                    let payload = after[..end].trim();
+                    return Some(Self::parse_payload(payload));
+                }
+            }
         }
         None
     }

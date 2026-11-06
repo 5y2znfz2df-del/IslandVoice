@@ -1,4 +1,4 @@
-# IslandVoice 1.1.3
+# IslandVoice 1.1.4
 
 WinIsland 的语音 AI 助手插件：唤醒后说中文，DeepSeek 回答，灵动岛显示，并用 Edge 晓晓朗读。
 
@@ -14,7 +14,7 @@ WinIsland 的语音 AI 助手插件：唤醒后说中文，DeepSeek 回答，灵
 ## 安装
 
 1. 完全退出 WinIsland
-2. 解压 `island-voice-1.1.3.zip` 到：
+2. 解压 `island-voice-1.1.4.zip` 到：
 
 ```text
 %APPDATA%\WinIsland\plugins\island-voice\

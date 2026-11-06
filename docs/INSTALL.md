@@ -2,7 +2,7 @@
 
 ## 0. 鍓嶇疆
 
-- WinIsland 宸插畨瑁呭苟鑳芥甯告樉绀虹伒鍔ㄥ矝锛圵indows 10 2004+ / 11 x64锛夈€?- 宸茶幏寰楁彃浠跺寘锛歚island-voice-1.1.3.zip`銆?- 璇煶鍔熻兘闇€瑕侀害鍏嬮锛沇indows 璁剧疆 鈫?闅愮 鈫?楹﹀厠椋?涓厑璁告闈㈠簲鐢ㄨ闂€?
+- WinIsland 宸插畨瑁呭苟鑳芥甯告樉绀虹伒鍔ㄥ矝锛圵indows 10 2004+ / 11 x64锛夈€?- 宸茶幏寰楁彃浠跺寘锛歚island-voice-1.1.4.zip`銆?- 璇煶鍔熻兘闇€瑕侀害鍏嬮锛沇indows 璁剧疆 鈫?闅愮 鈫?楹﹀厠椋?涓厑璁告闈㈠簲鐢ㄨ闂€?
 ## 1. 瀹夎 Vosk 绂荤嚎鍞ら啋杩愯鏃朵笌妯″瀷
 
 IslandVoice 涓嶅己鍒朵緷璧栦粯璐瑰敜閱?SDK銆傚厤璐圭绾挎柟妗堜娇鐢?[Vosk](https://alphacephei.com/vosk/)锛圓pache-2.0锛夛細
@@ -90,7 +90,7 @@ wake detected: hey siri
 濡傛灉澶辫触锛岃 [TROUBLESHOOTING.md](TROUBLESHOOTING.md#vosk-鐩稿叧)銆?
 ## 2. 瀹夎鎻掍欢
 
-1. 鎵撳紑 WinIsland 璁剧疆锛堟墭鐩樺弻鍑?/ 鍙抽敭鑿滃崟锛夈€?2. 杩涘叆鈥滄彃浠垛€濋〉锛岄€夋嫨鈥滀粠鏈湴鏂囦欢瀹夎 / 瀹夎鎻掍欢鍖呪€濄€?3. 閫夋嫨 `target/island-voice-1.1.3.zip`銆?4. 鍦ㄦ彃浠跺垪琛ㄤ腑鍚敤 **IslandVoice**銆?
+1. 鎵撳紑 WinIsland 璁剧疆锛堟墭鐩樺弻鍑?/ 鍙抽敭鑿滃崟锛夈€?2. 杩涘叆鈥滄彃浠垛€濋〉锛岄€夋嫨鈥滀粠鏈湴鏂囦欢瀹夎 / 瀹夎鎻掍欢鍖呪€濄€?3. 閫夋嫨 `target/island-voice-1.1.4.zip`銆?4. 鍦ㄦ彃浠跺垪琛ㄤ腑鍚敤 **IslandVoice**銆?
 涓嶅悓 WinIsland 鐗堟湰鐨勫叆鍙ｅ悕绉板彲鑳界暐鏈夊樊寮傦紱鏍稿績鏄€夋嫨鏈湴 `.zip`锛堜笉鏄彧閫?`.dll`锛夈€?
 ## 3. 棣栨閰嶇疆
 

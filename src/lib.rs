@@ -167,6 +167,9 @@ fn create_inner(info: &PluginCreateInfoV2) -> Result<Plugin, PluginStatus> {
     if std::env::var_os("ISLANDVOICE_LISTEN_TEST").is_some() {
         let _ = tx.try_send(ConfigCommand::ListenOnce);
     }
+    if std::env::var_os("ISLANDVOICE_CONFIG_TEST").is_some() {
+        let _ = tx.try_send(ConfigCommand::OpenConfig);
+    }
     logging::info(
         &host,
         &format!(

@@ -20,7 +20,8 @@ use windows_sys::Win32::UI::HiDpi::GetDpiForSystem;
 use windows_sys::Win32::UI::Input::KeyboardAndMouse::SetFocus;
 use windows_sys::Win32::UI::WindowsAndMessaging::{
     BM_GETCHECK, BM_SETCHECK, BS_AUTOCHECKBOX, BS_DEFPUSHBUTTON, BS_PUSHBUTTON, CB_ADDSTRING,
-    CB_GETCURSEL, CB_SETCURSEL, CBS_DROPDOWNLIST, CreateWindowExW, DefWindowProcW, DestroyWindow,
+    CB_GETCURSEL, CB_SETCURSEL, CBN_SELCHANGE, CBS_DROPDOWNLIST, CreateWindowExW,
+    DefWindowProcW, DestroyWindow,
     DispatchMessageW, ES_AUTOHSCROLL, ES_PASSWORD, GWLP_USERDATA, GetMessageW, GetWindowLongPtrW,
     GetWindowTextLengthW, GetWindowTextW, IDC_ARROW, LoadCursorW, MSG, MessageBoxW, PostMessageW,
     PostQuitMessage, RegisterClassW, SM_CXSCREEN, SM_CYSCREEN, SW_SHOW, SendMessageW,
@@ -37,6 +38,7 @@ use crate::util::wide;
 
 const ID_SAVE: usize = 1001;
 const ID_CANCEL: usize = 1002;
+const ID_LLM_PRESET: usize = 1003;
 const WM_APP_OPEN: u32 = 0x8000 + 1;
 
 const CLASS_NAME: &str = "IslandVoiceConfigWindow";
@@ -130,6 +132,7 @@ struct WindowState {
     model: HWND,
     base_url: HWND,
     proxy: HWND,
+    preset: HWND,
     stt_mode: HWND,
     stt_base: HWND,
     stt_key: HWND,
@@ -153,6 +156,12 @@ unsafe extern "system" fn wndproc(
     match message {
         WM_COMMAND => {
             let id = (wparam & 0xFFFF) as usize;
+            if id == ID_LLM_PRESET && ((wparam >> 16) as u32) == CBN_SELCHANGE {
+                if let Some(state) = state(hwnd) {
+                    apply_preset(state);
+                }
+                return 0;
+            }
             if id == ID_SAVE {
                 if let Some(state) = state(hwnd) {
                     match read_config(state) {
@@ -261,13 +270,13 @@ fn run_window(
     let config = shared.config();
     let scale = dpi_scale();
     let width = scaled(720.0, scale);
-    let height = scaled(820.0, scale);
-    let x = (unsafe { windows_sys::Win32::UI::WindowsAndMessaging::GetSystemMetrics(SM_CXSCREEN) }
-        - width)
-        / 2;
-    let y = (unsafe { windows_sys::Win32::UI::WindowsAndMessaging::GetSystemMetrics(SM_CYSCREEN) }
-        - height)
-        / 2;
+    let screen_w =
+        unsafe { windows_sys::Win32::UI::WindowsAndMessaging::GetSystemMetrics(SM_CXSCREEN) };
+    let screen_h =
+        unsafe { windows_sys::Win32::UI::WindowsAndMessaging::GetSystemMetrics(SM_CYSCREEN) };
+    let height = scaled(820.0, scale).min((screen_h - 60).max(480));
+    let x = (screen_w - width) / 2;
+    let y = (screen_h - height) / 2;
     let title = wide("IslandVoice 配置");
     let hwnd = unsafe {
         CreateWindowExW(
@@ -343,6 +352,32 @@ fn create_controls(
     let mut y = scaled(12.0, scale);
     let instance = unsafe { GetModuleHandleW(std::ptr::null()) };
 
+    // 顶部固定保存/取消：小屏幕下即使内容被裁切也能保存。
+    add_button(
+        hwnd,
+        instance,
+        font,
+        "保存",
+        field_x + field_width - scaled(212.0, scale),
+        y,
+        scaled(100.0, scale),
+        scaled(32.0, scale),
+        ID_SAVE,
+        true,
+    );
+    add_button(
+        hwnd,
+        instance,
+        font,
+        "取消",
+        field_x + field_width - scaled(100.0, scale),
+        y,
+        scaled(100.0, scale),
+        scaled(32.0, scale),
+        ID_CANCEL,
+        false,
+    );
+
     add_label(
         hwnd,
         instance,
@@ -359,7 +394,7 @@ fn create_controls(
         hwnd,
         instance,
         font,
-        "语音 AI 助手 · DeepSeek",
+        "语音 AI 助手 · 大模型",
         margin,
         y,
         scaled(520.0, scale),
@@ -414,6 +449,16 @@ fn create_controls(
         false,
     );
     y += row;
+    let preset = add_preset_combo(
+        hwnd,
+        instance,
+        font,
+        field_x,
+        y,
+        field_width,
+        row,
+        &config.llm_preset,
+    );
     add_label(
         hwnd,
         instance,
@@ -422,17 +467,6 @@ fn create_controls(
         margin,
         y + scaled(4.0, scale),
         label_width,
-        row,
-        false,
-    );
-    add_label(
-        hwnd,
-        instance,
-        font,
-        "DeepSeek（固定）",
-        field_x,
-        y + scaled(4.0, scale),
-        field_width,
         row,
         false,
     );
@@ -475,7 +509,7 @@ fn create_controls(
         hwnd,
         instance,
         font,
-        "模型名称（如 deepseek-chat / gpt-3.5-turbo）",
+        "模型名称（如 deepseek-chat）",
         margin,
         y + scaled(4.0, scale),
         label_width,
@@ -498,7 +532,7 @@ fn create_controls(
         hwnd,
         instance,
         font,
-        "大模型地址（OpenAI 兼容）",
+        "大模型地址",
         margin,
         y + scaled(4.0, scale),
         label_width,
@@ -580,7 +614,7 @@ fn create_controls(
         hwnd,
         instance,
         font,
-        "STT 地址（OpenAI 兼容）",
+        "STT 地址",
         margin,
         y + scaled(4.0, scale),
         label_width,
@@ -820,6 +854,7 @@ fn create_controls(
         model,
         base_url,
         proxy,
+        preset,
         stt_mode,
         stt_base,
         stt_key,
@@ -906,6 +941,70 @@ fn add_edit(
         SetWindowTextW(hwnd, text.as_ptr());
     }
     hwnd
+}
+
+fn add_preset_combo(
+    parent: HWND,
+    instance: windows_sys::Win32::Foundation::HINSTANCE,
+    font: HGDIOBJ,
+    x: i32,
+    y: i32,
+    width: i32,
+    height: i32,
+    preset: &str,
+) -> HWND {
+    let class = wide("COMBOBOX");
+    let hwnd = unsafe {
+        CreateWindowExW(
+            0,
+            class.as_ptr(),
+            std::ptr::null(),
+            WS_CHILD | WS_VISIBLE | WS_TABSTOP | WS_VSCROLL | CBS_DROPDOWNLIST as u32,
+            x,
+            y,
+            width,
+            height,
+            parent,
+            ID_LLM_PRESET as usize as *mut c_void,
+            instance,
+            std::ptr::null(),
+        )
+    };
+    set_font(hwnd, font, false);
+    for text in [
+        "DeepSeek（默认 deepseek-chat）",
+        "智谱 GLM-4.5-Flash（glm-4.5-flash）",
+        "自定义（手动填地址和模型）",
+    ] {
+        let text = wide(text);
+        unsafe {
+            SendMessageW(hwnd, CB_ADDSTRING, 0, text.as_ptr() as LPARAM);
+        }
+    }
+    let index = match preset.trim() {
+        "zhipu" => 1,
+        "custom" => 2,
+        _ => 0,
+    };
+    unsafe {
+        SendMessageW(hwnd, CB_SETCURSEL, index, 0);
+    }
+    hwnd
+}
+
+fn apply_preset(state: &WindowState) {
+    let index = unsafe { SendMessageW(state.preset, CB_GETCURSEL, 0, 0) };
+    let (base, model) = match index {
+        0 => ("https://api.deepseek.com", "deepseek-chat"),
+        1 => ("https://open.bigmodel.cn/api/paas/v4", "glm-4.5-flash"),
+        _ => return,
+    };
+    let base = wide(base);
+    let model = wide(model);
+    unsafe {
+        SetWindowTextW(state.base_url, base.as_ptr());
+        SetWindowTextW(state.model, model.as_ptr());
+    }
 }
 
 fn add_combo(
@@ -1072,6 +1171,11 @@ fn read_config(state: &WindowState) -> Result<Config, String> {
     config.api_key = get_text(state.api_key);
     config.model = get_text(state.model);
     config.deepseek_base_url = get_text(state.base_url);
+    config.llm_preset = match unsafe { SendMessageW(state.preset, CB_GETCURSEL, 0, 0) } {
+        1 => "zhipu".to_owned(),
+        2 => "custom".to_owned(),
+        _ => "deepseek".to_owned(),
+    };
     config.http_proxy = get_text(state.proxy);
     config.stt_base_url = get_text(state.stt_base);
     config.stt_api_key = get_text(state.stt_key);
@@ -1121,6 +1225,7 @@ fn focus_field(state: &WindowState, focus: &str) {
         "api_key" => state.api_key,
         "model" => state.model,
         "http_proxy" => state.proxy,
+        "llm_preset" => state.preset,
         "stt_base_url" => state.stt_base,
         "stt_api_key" => state.stt_key,
         "stt_model" => state.stt_model,

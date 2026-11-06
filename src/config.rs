@@ -37,6 +37,8 @@ pub struct Config {
     pub api_key: String,
     pub model: String,
     pub deepseek_base_url: String,
+    /// 大模型服务预设：deepseek / zhipu / custom。
+    pub llm_preset: String,
     pub http_proxy: String,
     pub auto_start: bool,
     pub show_reply: bool,
@@ -64,6 +66,7 @@ impl Default for Config {
             api_key: String::new(),
             model: "deepseek-chat".to_owned(),
             deepseek_base_url: "https://api.deepseek.com".to_owned(),
+            llm_preset: "deepseek".to_owned(),
             http_proxy: String::new(),
             auto_start: true,
             show_reply: true,
@@ -113,6 +116,11 @@ impl Config {
         if self.deepseek_base_url.is_empty() {
             self.deepseek_base_url = "https://api.deepseek.com".to_owned();
         }
+        self.llm_preset = match self.llm_preset.trim() {
+            "zhipu" => "zhipu".to_owned(),
+            "custom" => "custom".to_owned(),
+            _ => "deepseek".to_owned(),
+        };
         self.stt_base_url = self.stt_base_url.trim().trim_end_matches('/').to_owned();
         self.stt_api_key = self.stt_api_key.trim().to_owned();
         self.stt_model = self.stt_model.trim().to_owned();
@@ -140,6 +148,7 @@ impl Config {
             || self.model != other.model
             || self.http_proxy != other.http_proxy
             || self.deepseek_base_url != other.deepseek_base_url
+            || self.llm_preset != other.llm_preset
             || self.stt_mode != other.stt_mode
             || self.stt_base_url != other.stt_base_url
             || self.stt_api_key != other.stt_api_key
